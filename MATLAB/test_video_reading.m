@@ -45,7 +45,7 @@ try
 	
 	numberOfFramesWritten = 0;
 	% Prepare a figure to show the images in the upper half of the screen.
-	figure;
+	% figure;
 	% 	screenSize = get(0, 'ScreenSize');
 	% Enlarge figure to full screen.
 % 	set(gcf, 'units','normalized','outerposition',[0 0 1 1]);
@@ -145,29 +145,33 @@ try
 		% Now let's do the differencing
 		alpha = 0.5;
 		if frame == 1
-			Background = thisFrame;
-		else
+			BackGround = thisFrame;
+        else
 			% Change background slightly at each frame
 			% 			Background(t+1)=(1-alpha)*I+alpha*Background
-			Background = (1-alpha)* thisFrame + alpha * Background;
+			%Background = (1-alpha)* thisFrame + alpha * Background;
 		end
 % 		% Display the changing/adapting background.
 % 		subplot(2, 2, 3);
 % 		imshow(Background);
 % 		title('Adaptive Background', 'FontSize', fontSize);
 		% Calculate a difference between this frame and the background.
-		differenceImage = thisFrame - uint8(Background);
+		differenceImage = thisFrame - BackGround;
+%         imshow(differenceImage);
+%         if mod(frame,1000) == 0 
+%             pause;
+%         end
 		% Threshold with Otsu method.
-		grayImage = rgb2gray(differenceImage); % Convert to gray level
-		thresholdLevel = graythresh(grayImage); % Get threshold.
-		binaryImage = im2bw( grayImage, thresholdLevel); % Do the binarization
+% 		grayImage = rgb2gray(differenceImage); % Convert to gray level
+% 		thresholdLevel = graythresh(grayImage); % Get threshold.
+% 		binaryImage = im2bw( grayImage, thresholdLevel); % Do the binarization
 		% Plot the binary image.
 % 		subplot(2, 2, 4);
 % 		imshow(binaryImage);
 % 		title('Binarized Difference Image', 'FontSize', fontSize);
         
-        sumDiff = sum(sum(binaryImage));
-        
+        sumDiff = sum(sum(sum(differenceImage)));
+%         
         diffs(frame,1) = sumDiff;
         
 %         if (sumDiff > 100000)
@@ -180,8 +184,13 @@ try
 % 			progressIndication = sprintf('Processed frame %4d of %d, with %d diff.', frame, numberOfFrames, sumDiff);
 %         end
         
+        %sumDiff = 0;
+
         progressIndication = sprintf('Processed frame %4d of %d, with %d diff.', frame, numberOfFrames, sumDiff);
 		disp(progressIndication);
+        
+        BackGround = thisFrame;
+        
 	end
 	
 	% Alert user that we're done.

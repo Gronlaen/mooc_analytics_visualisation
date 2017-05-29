@@ -11,7 +11,7 @@ imtool close all;  % Close all imtool figures.
 clear;  % Erase all existing variables.
 workspace;  % Make sure the workspace panel is showing.
 
-movieFullFileName = 'test1.mp4';
+movieFullFileName = 'test3.mp4';
 % Check to see that it exists.
 if ~exist(movieFullFileName, 'file')
 	strErrorMessage = sprintf('File not found:\n%s\nYou can choose a new one, or cancel', movieFullFileName);
@@ -52,22 +52,24 @@ try
 		alpha = 0.5;
 		if frame == 1
 			Background = thisFrame;
-        else
-			Background = (1-alpha)* thisFrame + alpha * Background;
+%         else
+% 			Background = (1-alpha)* thisFrame + alpha * Background;
 		end
 		% Calculate a difference between this frame and the background.
-		differenceImage = thisFrame - uint8(Background);
+		differenceImage = thisFrame - Background;
 		% Threshold with Otsu method.
-		grayImage = rgb2gray(differenceImage); % Convert to gray level
-		thresholdLevel = graythresh(grayImage); % Get threshold.
-		binaryImage = im2bw( grayImage, thresholdLevel); % Do the binarization
+% 		grayImage = rgb2gray(differenceImage); % Convert to gray level
+% 		thresholdLevel = graythresh(grayImage); % Get threshold.
+% 		binaryImage = im2bw( grayImage, thresholdLevel); % Do the binarization
         
-        sumDiff = sum(sum(binaryImage));
+        sumDiff = sum(sum(sum(differenceImage)));
         
         diffs(frame,1) = sumDiff;
         
         progressIndication = sprintf('Processed frame %4d of %d, with %d diff.', frame, numberOfFrames, sumDiff);
 		disp(progressIndication);
+        
+        Background = thisFrame;
 	end
 	
 
@@ -75,7 +77,7 @@ try
 	disp(finishedMessage); % Write to command window.
 
     plot(diffs(:,1))
-    csvwrite('video_6_4.csv',diffs)
+    csvwrite('video_4_3.csv',diffs)
 	
 catch ME
 	% Some error happened if you get here.
