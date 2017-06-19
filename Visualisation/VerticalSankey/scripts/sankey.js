@@ -1,5 +1,7 @@
 d3.sankey = function() {
   var sankey = {},
+      zoomed = false,
+      target_y = 0,
       nodeWidth = 24,
       nodePadding = 8, // was 8, needs to be much bigger. these numbers are actually overwritten in the html when we instantiate the viz!
       size = [1, 1],
@@ -7,9 +9,22 @@ d3.sankey = function() {
       nodes = [],
       links = [];
 
+
   sankey.nodeWidth = function(_) {
     if (!arguments.length) return nodeWidth;
     nodeWidth = +_;
+    return sankey;
+  };
+
+  sankey.zoomed = function(_) {
+    if (!arguments.length) return zoomed;
+    zoomed = _;
+    return sankey;
+  };
+
+  sankey.target_y = function(_) {
+    if (!arguments.length) return target_y;
+    target_y = +_;
     return sankey;
   };
 
@@ -77,13 +92,23 @@ d3.sankey = function() {
     function link(d) {
 
         // big changes here obviously, more comments to follow
+        // var y1;
+
+        // if (sankey.zoomed() == false)  y1 = d.target.y
+        // // if (sankey.zoomed() == true)  y1 = d.target.y - 289.375
+        // if (sankey.zoomed() == true)  y1 = 0
+
         var x0 = d.source.x + d.sy + d.dy / 2,
             x1 = d.target.x + d.ty + d.dy / 2,
           y0 = d.source.y + nodeWidth,
-          y1 = d.target.y,
+          y1 = sankey.target_y()
           yi = d3.interpolateNumber(y0, y1),
           y2 = yi(curvature),
           y3 = yi(1 - curvature);
+
+        // console.log(d.source.y, d.target.y, y1)
+        // else 
+        //   y1 = -10
 
         // ToDo - nice to have - allow flow up or down! Plenty of use cases for starting at the bottom,
         // but main one is trickle down (economics, budgets etc), not up

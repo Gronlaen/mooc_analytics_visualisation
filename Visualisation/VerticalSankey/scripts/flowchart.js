@@ -1,6 +1,7 @@
 var margin = {top: 110, right: 65, bottom: 50, left: 65},
-            width = 1300 - margin.left - margin.right,
+            width = 1500 - margin.left - margin.right,
             height = 600 - margin.top - margin.bottom;
+            // height = 250;
             
         var formatNumber = d3.format(",.0f"),
             format = function(d) { return formatNumber(d) + " Seeks"; },
@@ -12,7 +13,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             .attr("class", "graph-svg-component")
           .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
+          
         var padding = 0
 
         var blue = "#0057e7",
@@ -21,6 +22,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
         var sankey = d3.sankey()
             .nodeWidth(100)
             .nodePadding(padding)
+            .zoomed(false)
             .size([width, height]);
 
         var path = sankey.link();
@@ -29,10 +31,10 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
         var last_selected_node = 0;
 
-        var video_path = "bio_7_4";
+        var video_path = "bio-465_week7_part4";
         // var video_path = "spc_4_2";
 
-        d3.json("../d3/data/" + video_path + ".json", function(error, graph) {
+        d3.json("../data/json/" + video_path + ".json", function(error, graph) {
 
           var nodeMap = {};
           graph.nodes.forEach(function(x) { nodeMap[x.name] = x;  x.name = x.name.split(" ")[1];});
@@ -49,8 +51,14 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
           var nodeSize = (width - (graph.nodes.length/2-1)*padding) / graph.nodes.length*2
           var nodeNumber = graph.nodes.length/2
           var nodeHeight = nodeSize*9/16
-          // console.log('node size',nodeSize)
+          var target_y_zoomed = height - nodeHeight
+          var padding_flowchart = 60
+
+          console.log('node size',nodeSize)
+          console.log('node height',nodeHeight)
+          console.log('target.y', target_y_zoomed)
           sankey.nodeWidth(nodeHeight)
+          sankey.target_y(target_y_zoomed)
 
           sankey
               .nodes(graph.nodes)
@@ -98,7 +106,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             .append("text").attr('class','linkTextDummy')
               .attr("x", function(d) { 
                 return parseInt(d.target.name)*nodeSize + nodeSize/2 + d.ty ; })
-              .attr("y", function(d) { return d.target.y - 25; })
+              .attr("y", function(d) { return sankey.target_y() - 25; })
               .attr("dy", ".35em")
               .attr("text-anchor", "middle")
               .attr("font-size",25)
@@ -108,7 +116,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               })
               .style('visibility','hidden')
               .text(function(d) { return d.text; })
-              .style('fill','black');
+              .style('fill','red');
             
           var node = svg.append("g").selectAll(".node")
               .data(graph.nodes)
@@ -116,7 +124,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .attr("class", "node")
               .attr("type", function(d) { return d.name.slice(0,6);})
               .attr("transform", function(d) {
-                  return "translate(" + d.x + "," + d.y + ")"; 
+                  return "translate(" + d.x + "," + 0 + ")"; 
               })
               .on("click",highlight_node_links)
               .on("mouseover", mouse_in_node)
@@ -155,7 +163,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                 if (d.class_type == 'source')
                   return -15 + d.y;
                 else
-                  return 22 + d.y + nodeHeight;
+                  return 22 + padding_flowchart + 2*nodeHeight;
               })
               .attr("id", function(d,i){
                 d.id = i;
@@ -238,65 +246,94 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                 return "snapshots_images-"+i;
               })
 
-
-          //  var big_images_background = svg.append("g").selectAll(".node")
-          //     .data(graph.nodes)
-          //     .enter()
-          //     .append("rect")
-          //     .attr("x", function(d) { return width/2 - 260; })
-          //     .attr("y", function(d) { return -412; })
-          //     .attr("width", 520 )
-          //     .attr("height", 304)
-          //     .style("fill", function(d){ //return "#0057e7";
-          //       return "black"})
-          //     .style("fill-opacity", function(d) { return 1;})
-          //     .style("stroke", "black")
-          //     .style("stroke-width",1)
-          //     .style("visibility", "hidden")
-          //     .style("opacity", 0)
-          //     .attr("id", function(d,i){
-          //       d.id = i;
-          //       return "big_images_background-"+i;
-          //     })
+          svg.append("rect")
+            .attr("class", "bg_rect")
+            .attr("width", width)
+            .attr("height", 2*nodeHeight + padding_flowchart)
+            .attr("fill", "white")
+            //.attr("transform", "translate(" + margin.left + "," + margin.right + ")");
+            
+          var flowchart_rect = svg.append("rect")
+              .attr("class", "switch_rect")
+              .attr("x", width/2 - 100)
+              .attr("y", nodeHeight + 10)
+              .attr("width", 200)
+              .attr("height", padding_flowchart-20)
+              .attr("fill", "#fafafa")
+              .style("stroke", "black")
+              .style("stroke-width", 1)
+              .style("opacity", 0.3)
+              .on("click", function() { first_expansion(true); })
 
 
-          // var big_images = svg.append("g").selectAll(".node")
-          //     .data(graph.nodes)
-          //     .enter()
-          //     .append("image")
-          //     .attr("xlink:href", function(d) {
-          //       return "snapshots/" + video_path + "/slide_" + d.name + ".png";
-          //     })
-          //     .attr("x", function(d) { return width/2 - 260; })
-          //     .attr("y", function(d) { return -410; })
-          //     .attr("width", 520 )
-          //     .attr("height", 300)
-          //     .style("visibility", function(d) {
-          //       if (d.class_type == 'source')
-          //         return "hidden"
-          //       else
-          //         return "hidden"
-          //     })
-          //     // .style("stroke", "black")
-          //     // .style("stroke-width",1)
-          //     .attr("id", function(d,i){
-          //       d.id = i;
-          //       return "big_images-"+i;
-          //     })
-
+          var flowchart_text = svg.append("text")
+              .attr("class", "switch_text")
+              .attr("x",  width/2)
+              .attr("y", nodeHeight + padding_flowchart/2)
+              .attr("dy", ".35em")
+              .attr("text-anchor", "middle")
+              .attr("font-size",22)
+              .attr("fill","black")
+              .text("Expand Flowchart")
 
           function moveToRightPlace() {
             d3.selectAll('g.node')  //here's how you get all the nodes
               .each(function(d) {
                 d.rightPlace = parseInt(d.name)*nodeSize + parseInt(d.name)*padding
-                d3.select(this).attr("transform", "translate(" + (d.x = d.rightPlace) + "," + d.y + ")");
+                d3.select(this).attr("transform", function(d) { 
+                   if (d.class_type == 'source') {
+                    return "translate(" + (d.x = d.rightPlace) + "," + (d.y = 0) + ")";
+                  } else {
+                    return "translate(" + (d.x = d.rightPlace) + "," + (d.y = nodeHeight + padding_flowchart) + ")";
+                  }
+                })
+                d3.select(this).attr("opacity", function(d) {
+                  if (d.class_type == 'source') {
+                    return 1;
+                  } else {
+                    return 1;
+                  }
+                })
+                if (d.class_type == 'target') d3.select(this).moveToBack()
             });
+            
+            // node.transition()
+            // .duration(0)
+            // .attr("transform", function(d) {
+            //   d.rightPlace = parseInt(d.name)*nodeSize + parseInt(d.name)*padding;
+            //   return "translate(" + (d.x = d.rightPlace) + "," + (d.y = 0) + ")";
+            // })
+            // .attr("opacity", function(d) {
+            //   if (d.class_type == 'source') {
+            //       return 1;
+            //     } else {
+            //       return 0;
+            //     }
+            // })
+
             sankey.relayout();
             link.attr("d", path);
             linktext_bottom_dummy.attr("x", function(d) { return parseInt(d.target.name)*nodeSize + d.ty + d.dy/2 ; })
             linktext_top_dummy.attr("x", function(d) { return parseInt(d.source.name)*nodeSize + d.sy + d.dy/2 ; })
             snapshots_background.attr("x", function(d) { return parseInt(d.name)*nodeSize; })
             snapshots_images.attr("x", function(d) { return parseInt(d.name)*nodeSize; })
+
+
+            d3.selectAll(".switch_text").each(function(d) {d3.select(this).moveToBack()})
+
+            d3.selectAll(".bg_rect").each(function(d) {d3.select(this).moveToBack()})
+
+
+            document.getElementById("top_video").style.zIndex = "1";
+            document.getElementById("top_picture").style.zIndex = "2";
+
+            document.getElementById("checkbox1").checked = false;
+            document.getElementById("checkbox2").checked = false;
+
+            // document.getElementById("top_video").addEventListener("loadedmetadata", function() {
+            //   this.play();
+            // }, false);
+
           }
 
           moveToRightPlace()
@@ -360,7 +397,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             .append("text").attr('class','linkTextDummy')
               .attr("x", function(d) {
                 return d.target.x + d.ty + d.dy/2; })
-              .attr("y", function(d) { return d.target.y - 25; })
+              .attr("y", function(d) { return sankey.target_y() - 25; })
               .attr("dy", ".35em")
               .attr("text-anchor", "middle")
               .attr("font-size",25)
@@ -382,11 +419,11 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
           }
 
           function update_text_info(n) {
-            document.getElementById("table_timestamp_start").innerHTML = n.timestamp_start;
-            document.getElementById("table_timestamp_end").innerHTML = n.timestamp_end;
-            document.getElementById("table_users_in").innerHTML = n.incoming_links; 
-            document.getElementById("table_users_out").innerHTML = n.outgoing_links;
-            document.getElementById("table_slide_number").innerHTML = n.id % nodeNumber;
+            // document.getElementById("table_timestamp_start").innerHTML = n.timestamp_start;
+            // document.getElementById("table_timestamp_end").innerHTML = n.timestamp_end;
+            // document.getElementById("table_users_in").innerHTML = n.incoming_links; 
+            // document.getElementById("table_users_out").innerHTML = n.outgoing_links;
+            // document.getElementById("table_slide_number").innerHTML = n.id % nodeNumber;
 
             document.getElementById("highlight_progress_bar").style.background = n.color;
             // document.getElementById("highlight_progress_bar").style.opacity = n.alpha;
@@ -403,10 +440,10 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
             update_text_info(n);
 
-            document.getElementById("top_picture").src = "snapshots/bio_7_4/slide_" + zeroPad(n.id % nodeNumber,2) + ".png";
-            document.getElementById("top_div_container").style.visibility = "visible"
-            document.getElementById("progress_bar_container").style.visibility = "visible"
-            document.getElementById("slide_information_container").style.visibility = "visible"
+            document.getElementById("top_picture").src = "snapshots/"+ video_path + "/slide_" + zeroPad(n.id % nodeNumber,2) + ".png";
+            // document.getElementById("top_div_container").style.visibility = "visible"
+            // document.getElementById("progress_bar_container").style.visibility = "visible"
+            // document.getElementById("slide_information_container").style.visibility = "visible"
 
             document.getElementById("before_progress_bar").style.width = n.progress_before + "px"
             document.getElementById("highlight_progress_bar").style.width = n.progress_highlight + "px"
@@ -442,7 +479,176 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
           }
 
+
+          function update(nodeData, linkData, zoomed) {
+
+            // console.log(document.getElementById("top_video").duration)
+            // console.log(document.getElementById("top_video").currentTime)
+            // sankey
+            //   .nodes(nodeData)
+            //   .links(linkData)
+            //   .layout(0);
+
+            //sankey.relayout();
+            // fontScale.domain(d3.extent(nodeData, function(d) { return d.value }));
+
+            if (zoomed == true) {
+
+              node_infos.transition()
+                .duration(1500)
+                .attr("transform", function(d) {
+                  if (d.class_type == 'source') {
+                    return "translate(" + 0 + "," +  0 + ")";
+                  } else {
+                    return "translate(" + 0 + "," +  (target_y_zoomed - padding_flowchart - nodeHeight) + ")";
+                  }
+                })
+
+              node.transition()
+                .duration(1500)
+                .attr("transform", function(d) {
+                  if (d.class_type == 'source') {
+                    return "translate(" + parseInt(d.name)*nodeSize  + "," +  0 + ")";
+                  } else {
+                    return "translate(" + d.x + "," + target_y_zoomed + ")";
+                  }
+                })
+                // .style("opacity", function(d) {
+                //   if (d.class_type == 'source') {
+                //     return 1;
+                //   } else {
+                //     return 1;
+                //   }
+                // })
+                .each('end', function() { 
+                  sankey.zoomed(true)
+                })
+
+              d3.selectAll(".bg_rect").transition()
+                .duration(1500)
+                .attr("height", height)
+                .each("end", function() {
+                  d3.selectAll(".node").each(function(current_node) {
+                  if (selected_nodes.has(current_node.id)) {
+
+                    console.log(current_node.id)
+                    var remainingNodes=[],
+                      nextNodes=[];
+
+                    var stroke_opacity = current_node.alpha;
+                    var stroke_color = current_node.color;
+                    var visibility = 'visible';
+                    var node_stroke_width = 1;
+
+                    var traverse = [{
+                                      linkType : "sourceLinks",
+                                      nodeType : "target"
+                                    },{
+                                      linkType : "targetLinks",
+                                      nodeType : "source"
+                                    }];
+
+                    traverse.forEach(function(step){
+                    var node_class = step.nodeType
+                      current_node[step.linkType].forEach(function(link) {
+                        remainingNodes.push(link[step.nodeType]);
+                        highlight_link(link.id, stroke_opacity, stroke_color, visibility, node_class);
+                      });
+                    });
+                  }
+                })
+                })
+
+
+            } else {
+
+              d3.selectAll(".link").each(function(d) {
+                d3.select("#link-"+d.id).style("visibility", "hidden");
+                d3.select("#link_top-"+d.id).style("visibility", "hidden");
+                d3.select("#link_top_frame-"+d.id).style("visibility", "hidden");
+                d3.select("#link_bottom-"+d.id).style("visibility", "hidden");
+                d3.select("#link_bottom_frame-"+d.id).style("visibility", "hidden");
+              })
+
+              node_infos.transition()
+                .duration(1500)
+                .attr("transform", function(d) {
+                  if (d.class_type == 'source') {
+                    return "translate(" + 0 + "," +  0 + ")";
+                  } else {
+                    return "translate(" + 0 + "," +  0 + ")";
+                  }
+                })
+                  // .attr("x", function(d) { return parseInt(d.name)*nodeSize + nodeSize/2 })
+                  //   .attr("y", function(d) {
+                  // if (d.class_type == 'source')
+                  //   return -15 + d.y;
+                  // else
+                  //   return 22 + d.y + nodeHeight;
+
+              node.transition()
+                .duration(1500)
+                .attr("transform", function(d) {
+                  if (d.class_type == 'source') {
+                    return "translate(" + parseInt(d.name)*nodeSize  + "," +  0 + ")";
+                  } else {
+                    return "translate(" + d.x + "," + (nodeHeight + padding_flowchart) + ")";
+                  }
+                })
+                // .style("opacity", function(d) {
+                //   if (d.class_type == 'source') {
+                //     return 1;
+                //   } else {
+                //     return 1;
+                //   }
+                // })
+                .each('start', function() {
+                  make_links_disappear();
+                  sankey.zoomed(false)
+                })
+
+              d3.selectAll(".bg_rect").transition()
+                .duration(1500)
+                .attr("height", 2*nodeHeight + padding_flowchart)
+            }
+
+            
+
+            sankey.relayout();
+
+
+            // d3.selectAll('g.node')
+            // .each(function(d) {
+            //   d.rightPlace = parseInt(d.name)*nodeSize + parseInt(d.name)*padding
+            //   d3.select(this).attr("transform", "translate(" + (d.x = d.rightPlace) + "," + d.y + ")");
+            // });
+            // sankey.relayout();
+            // link.attr("d", path);
+
+            // sankey.relayout();
+
+
+
+            // svg.selectAll(".node rect")
+            //   .transition()
+            //   .duration(1300)
+            //   .attr("height", function(d) {
+            //     return d.dy;
+            //   });
+
+            // svg.selectAll(".node text")
+            //   .transition()
+            //   .duration(1300)
+            //   .attr("y", function(d) {
+            //     return d.dy / 2;
+            //   })
+            //   .style("font-size", function(d) {
+            //     return Math.floor(fontScale(d.value)) + "px";
+            //   });
+          };
+
           function mouse_in_node(n,i) {
+
 
             var remainingNodes=[],
                 nextNodes=[];
@@ -453,113 +659,53 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             var node_stroke_width = 5;
             var image_opacity = 0;
 
+            d3.select(this).select("rect").style("stroke-width", node_stroke_width)
+
+            // d3.selectAll(".node").each(function(current_node) {
+            //     if ((current_node.id%nodeNumber != n.id%nodeNumber)  & !(selected_nodes.has(current_node.id)) & !(selected_nodes.has(current_node.id % nodeNumber)) & !(selected_nodes.has(node.id % nodeNumber + nodeNumber)) ) {
+            //       image_opacity = 0.2;
+            //     } else {
+            //       console.log(current_node.id, selected_nodes)
+            //       image_opacity = 1;
+            //     }
+            //     d3.select("#snapshots_images-" + current_node.id % nodeNumber).style("opacity", image_opacity)
+            //   })
+
+            for (i = 0; i < nodeNumber; i++) {
+              if ( (i != n.id % nodeNumber) & !(selected_nodes.has(i)) & !(selected_nodes.has(i + nodeNumber))) {
+                image_opacity = 0.2;
+              } else {
+                image_opacity = 1;
+              }
+              d3.select("#snapshots_images-" + i).style("opacity", image_opacity)
+            }
+
+            d3.select("#node_infos-" + n.id).style("visibility", visibility)
+
             update_top_elements(n);
+
+            if (document.querySelector("input[name=checkbox2]").checked == true) {
+              var top_vid = document.getElementById("top_video")
+              // if (!(top_video.paused == true)) {
+
+              // }
+              top_vid.play();
+              top_vid.pause();
+              top_vid.currentTime = n.starting_time;
+              top_vid.play();
+            }
 
 
             // d3.select("#big_images-" + n.id % nodeNumber).style("visibility", "visible")
             // d3.select("#big_images_background-" + n.id % nodeNumber).style("visibility", "visible")
 
-            d3.select(this).select("rect").style("stroke-width", node_stroke_width)
-            //d3.select(this).select("text").style("visibility", visibility)
-            d3.select("#node_infos-" + n.id).style("visibility", visibility)
-            //d3.select("#snapshots_background-" + n.id).style("stroke-width", node_stroke_width)
-
-            d3.selectAll(".node").each(function(current_node) {
-              if ((current_node.id%nodeNumber != n.id%nodeNumber)  & !(selected_nodes.has(current_node.id)) & !(selected_nodes.has(current_node.id % nodeNumber)) ) {
-                image_opacity = 0.2;
-              } else {
-                image_opacity = 1;
-              }
-              d3.select("#snapshots_images-" + current_node.id % nodeNumber).style("opacity", image_opacity)
-            })
-
-
-            var traverse = [{
-                              linkType : "sourceLinks",
-                              nodeType : "target"
-                            },{
-                              linkType : "targetLinks",
-                              nodeType : "source"
-                            }];
-
-            traverse.forEach(function(step){
-              var node_class = step.nodeType
-              n[step.linkType].forEach(function(link) {
-                remainingNodes.push(link[step.nodeType]);
-                highlight_link(link.id, stroke_opacity, stroke_color, visibility, node_class);
-              });
-
-              while (remainingNodes.length) {
-                nextNodes = [];
-                remainingNodes.forEach(function(node) {
-                  node[step.linkType].forEach(function(link) {
-                    nextNodes.push(link[step.nodeType]);
-                    highlight_link(link.id, stroke_opacity, stroke_color, visibility, node_class);
-                  });
-                });
-                remainingNodes = nextNodes;
-              }
-            });
-          }
-
-          function mouse_out_node(node,i) {
-
-
-            var partial_opacity = 0.2;
-            var complete_visibility = 1;
-            // console.log("sel. nodes " + selected_nodes.size, node.id)
-
-            
-            if (selected_nodes.size == 0) {
-              d3.selectAll(".node").each(function(current_node) {
-                d3.select("#snapshots_images-" + current_node.id).style("opacity", complete_visibility) 
-              })
-
-              // document.getElementById("top_picture").src = "snapshots/bio_7_4/slide_" + zeroPad(n.id % nodeNumber,2) + ".png";
-              document.getElementById("top_div_container").style.visibility = "hidden"
-              document.getElementById("progress_bar_container").style.visibility = "hidden"
-              document.getElementById("slide_information_container").style.visibility = "hidden"
-              // d3.select("#big_images-" + node.id % nodeNumber).style("visibility", "hidden")
-              // d3.select("#big_images_background-" + node.id % nodeNumber).style("visibility", "hidden")
-
-            } else if ( !(selected_nodes.has(node.id)) & !(selected_nodes.has(node.id % nodeNumber)) ){
-              d3.select("#snapshots_images-" + node.id).style("opacity", partial_opacity)
-
-              document.getElementById("top_picture").src = "snapshots/bio_7_4/slide_" + zeroPad(last_selected_node % nodeNumber,2) + ".png";
-              document.getElementById("top_div_container").style.visibility = "visible"
-              document.getElementById("progress_bar_container").style.visibility = "visible"
-              document.getElementById("slide_information_container").style.visibility = "visible"
-
-              // d3.select("#big_images-" + node.id % nodeNumber).style("visibility", "hidden")
-              // d3.select("#big_images_background-" + node.id % nodeNumber).style("visibility", "hidden")
-
-            } else {
-
-              document.getElementById("top_picture").src = "snapshots/bio_7_4/slide_" + zeroPad(last_selected_node % nodeNumber,2) + ".png";
-              document.getElementById("top_div_container").style.visibility = "visible"
-              document.getElementById("progress_bar_container").style.visibility = "visible"
-              document.getElementById("slide_information_container").style.visibility = "visible"
+            if (sankey.zoomed()) {
               
-              // d3.select("#big_images-" + node.id % nodeNumber).style("visibility", "visible")
-              // d3.select("#big_images_background-" + node.id % nodeNumber).style("visibility", "visible")
+              //d3.select(this).select("text").style("visibility", visibility)
+              //d3.select("#snapshots_background-" + n.id).style("stroke-width", node_stroke_width)
 
-            }
+              
 
-
-            
-
-            if( d3.select(this).attr("data-clicked") != "1"  ) {
-
-              var remainingNodes=[],
-                  nextNodes=[];
-
-              var stroke_opacity = node.alpha;
-              var stroke_color = node.color;
-              var visibility = 'hidden';
-              var node_stroke_width = 1;
-
-              d3.select(this).select("rect").style("stroke-width", node_stroke_width)
-              d3.select("#node_infos-" + node.id).style("visibility", visibility)
               var traverse = [{
                                 linkType : "sourceLinks",
                                 nodeType : "target"
@@ -569,8 +715,8 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                               }];
 
               traverse.forEach(function(step){
-              var node_class = step.nodeType
-                node[step.linkType].forEach(function(link) {
+                var node_class = step.nodeType
+                n[step.linkType].forEach(function(link) {
                   remainingNodes.push(link[step.nodeType]);
                   highlight_link(link.id, stroke_opacity, stroke_color, visibility, node_class);
                 });
@@ -589,6 +735,129 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             }
           }
 
+          function mouse_out_node(node,i) {
+
+
+            console.log(selected_nodes, last_selected_node, selected_nodes[0])
+
+            var partial_opacity = 0.2;
+            var complete_visibility = 1;
+            // console.log("sel. nodes " + selected_nodes.size, node.id)
+
+            
+            if (selected_nodes.size == 0) {
+              d3.selectAll(".node").each(function(current_node) {
+                d3.select("#snapshots_images-" + current_node.id).style("opacity", complete_visibility) 
+              })
+
+              document.getElementById("before_progress_bar").style.width = 320 + "px"
+              document.getElementById("highlight_progress_bar").style.width = 0 + "px"
+              document.getElementById("after_progress_bar").style.width = 320 + "px"
+              document.getElementById("before_progress_bar").style.borderLeft = "2px solid black"
+              document.getElementById("before_progress_bar").style.borderTop = "2px solid black"
+              document.getElementById("before_progress_bar").style.borderBottom = "2px solid black"
+              document.getElementById("highlight_progress_bar").style.border = "0"
+              document.getElementById("highlight_progress_bar").style.borderTopRightRadius = "0px"
+              document.getElementById("highlight_progress_bar").style.borderBottomRightRadius = "0px"
+              document.getElementById("after_progress_bar").style.borderRight = "2px solid black"
+              document.getElementById("after_progress_bar").style.borderTop = "2px solid black"
+              document.getElementById("after_progress_bar").style.borderBottom = "2px solid black"
+
+              document.getElementById("top_picture").src = "snapshots/"+ video_path + "/slide_00.png";
+
+              // document.getElementById("top_picture").src = "snapshots/bio_7_4/slide_" + zeroPad(n.id % nodeNumber,2) + ".png";
+              // document.getElementById("top_div_container").style.visibility = "hidden"
+              // document.getElementById("progress_bar_container").style.visibility = "hidden"
+              // document.getElementById("slide_information_container").style.visibility = "hidden"
+              // d3.select("#big_images-" + node.id % nodeNumber).style("visibility", "hidden")
+              // d3.select("#big_images_background-" + node.id % nodeNumber).style("visibility", "hidden")
+
+            } else {
+              var current_displayed_node = 0
+              if (selected_nodes.size == 1) {
+                current_displayed_node =  selected_nodes.values().next().value
+              } else {
+                document.getElementById("before_progress_bar").style.width = 320 + "px"
+                document.getElementById("highlight_progress_bar").style.width = 0 + "px"
+                document.getElementById("after_progress_bar").style.width = 320 + "px"
+                document.getElementById("before_progress_bar").style.borderLeft = "2px solid black"
+                document.getElementById("before_progress_bar").style.borderTop = "2px solid black"
+                document.getElementById("before_progress_bar").style.borderBottom = "2px solid black"
+                document.getElementById("highlight_progress_bar").style.border = "0"
+                document.getElementById("highlight_progress_bar").style.borderTopRightRadius = "0px"
+                document.getElementById("highlight_progress_bar").style.borderBottomRightRadius = "0px"
+                document.getElementById("after_progress_bar").style.borderRight = "2px solid black"
+                document.getElementById("after_progress_bar").style.borderTop = "2px solid black"
+                document.getElementById("after_progress_bar").style.borderBottom = "2px solid black"
+
+                current_displayed_node = 0;
+              }
+              document.getElementById("top_picture").src = "snapshots/bio_7_4/slide_" + zeroPad(current_displayed_node % nodeNumber,2) + ".png";
+
+              for (i = 0; i < nodeNumber; i++) {
+              if ( !(selected_nodes.has(i)) & !(selected_nodes.has(i + nodeNumber))) {
+                image_opacity = 0.2;
+              } else {
+                image_opacity = 1;
+              }
+              d3.select("#snapshots_images-" + i).style("opacity", image_opacity)
+            }
+              // if ( !(selected_nodes.has(node.id)) & !(selected_nodes.has(node.id % nodeNumber)) & !(selected_nodes.has(node.id % nodeNumber + nodeNumber)) ){
+              // d3.select("#snapshots_images-" + node.id).style("opacity", partial_opacity)
+            }
+
+            
+
+            if( d3.select(this).attr("data-clicked") != "1"  ) {
+
+              var remainingNodes=[],
+                  nextNodes=[];
+
+              var stroke_opacity = node.alpha;
+              var stroke_color = node.color;
+              var visibility = 'hidden';
+              var node_stroke_width = 1;
+
+              d3.select(this).select("rect").style("stroke-width", node_stroke_width)
+
+
+              d3.select("#node_infos-" + node.id).style("visibility", visibility)
+
+              if (sankey.zoomed()) {
+
+                
+                // for (let item of selected_nodes) console.log(item);
+
+                var traverse = [{
+                                  linkType : "sourceLinks",
+                                  nodeType : "target"
+                                },{
+                                  linkType : "targetLinks",
+                                  nodeType : "source"
+                                }];
+
+                traverse.forEach(function(step){
+                var node_class = step.nodeType
+                  node[step.linkType].forEach(function(link) {
+                    remainingNodes.push(link[step.nodeType]);
+                    highlight_link(link.id, stroke_opacity, stroke_color, visibility, node_class);
+                  });
+
+                  while (remainingNodes.length) {
+                    nextNodes = [];
+                    remainingNodes.forEach(function(node) {
+                      node[step.linkType].forEach(function(link) {
+                        nextNodes.push(link[step.nodeType]);
+                        highlight_link(link.id, stroke_opacity, stroke_color, visibility, "source");
+                      });
+                    });
+                    remainingNodes = nextNodes;
+                  }
+                });
+              }
+            }
+          }
+
           function highlight_node_links(node,i){
 
             var remainingNodes=[],
@@ -600,6 +869,8 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             var visibility = "";
 
             if( d3.select(this).attr("data-clicked") == "1" ){
+
+              
               d3.select(this).attr("data-clicked","0");
               // console.log(node.id + " clicked -> not clicked")
               
@@ -631,33 +902,36 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               // d3.select("#big_images_background-" + node.id % nodeNumber).style("visibility", visibility)
             }
 
-            var traverse = [{
-                              linkType : "sourceLinks",
-                              nodeType : "target"
-                            },{
-                              linkType : "targetLinks",
-                              nodeType : "source"
-                            }];
+            if (sankey.zoomed()) {
 
-            traverse.forEach(function(step){
-              var node_class = step.nodeType
-              node[step.linkType].forEach(function(link) {
-                remainingNodes.push(link[step.nodeType])
-                highlight_link(link.id, stroke_opacity, stroke_color, visibility, node_class);
-              });
+              var traverse = [{
+                                linkType : "sourceLinks",
+                                nodeType : "target"
+                              },{
+                                linkType : "targetLinks",
+                                nodeType : "source"
+                              }];
 
-              while (remainingNodes.length) {
-                nextNodes = [];
-                remainingNodes.forEach(function(node) {
-                  node[step.linkType].forEach(function(link) {
-                    nextNodes.push(link[step.nodeType]);
-                    
-                    highlight_link(link.id, stroke_opacity, stroke_color, visibility, node_class);
-                  });
+              traverse.forEach(function(step){
+                var node_class = step.nodeType
+                node[step.linkType].forEach(function(link) {
+                  remainingNodes.push(link[step.nodeType])
+                  highlight_link(link.id, stroke_opacity, stroke_color, visibility, node_class);
                 });
-                remainingNodes = nextNodes;
-              }
-            });
+
+                while (remainingNodes.length) {
+                  nextNodes = [];
+                  remainingNodes.forEach(function(node) {
+                    node[step.linkType].forEach(function(link) {
+                      nextNodes.push(link[step.nodeType]);
+                      
+                      highlight_link(link.id, stroke_opacity, stroke_color, visibility, node_class);
+                    });
+                  });
+                  remainingNodes = nextNodes;
+                }
+              });
+            }
           }
 
           function highlight_link(id,opacity,color, visibility, node_class){
@@ -674,9 +948,159 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               }
               
           }
+
+          var slider_zoom = document.getElementById('checkbox1');
+          slider_zoom.onclick = function(){
+              // console.log("Zoomed :", slider_zoom.checked)
+              // update(graph.nodes, graph.links, slider_zoom.checked)
+              first_expansion(slider_zoom.checked)
+
+          }
+
+          // var butt = document.getElementsByClassName('part_links')
+          // butt.onclick = function(this) {
+          //   this.classList.add('active')
+
+          //   // document.getElementById('top_div_container').style.visibility = "hidden"
+          //   // document.getElementById('chart').style.visibility = "hidden"
+          //   // document.getElementsByClassName('graph-svg-component').style.visibility = "hidden"
+          // }
+
+          // document.addEventListener('DOMContentLoaded', function () {
+          //   document.querySelector('#checkbox2').addEventListener('change', changeVideo);
+          // });
+
+          // function changeVideo() {
+          //   var slider_video = document.getElementById('checkbox2');
+          //   console.log(slider_video.checked)
+          //   if (slider_video.checked == true) {
+          //     document.getElementById("top_video").style.zIndex = "2";
+          //     document.getElementById("top_picture").style.zIndex = "1";
+
+          //     document.getElementById("top_video").currentTime = 208;
+          //     document.getElementById("top_video").play()
+          //   } else {
+          //     document.getElementById("top_video").style.zIndex = "1";
+          //     document.getElementById("top_picture").style.zIndex = "2";
+          //     console.log(document.getElementById("top_video").currentTime)
+          //     document.getElementById("top_video").pause()
+          //     console.log(document.getElementById("top_video").currentTime)
+          //   }
+          // }
+
+          var checkbox_video = document.querySelector("input[name=checkbox2]");
+          var top_vid = document.getElementById("top_video")
+          var top_pict = document.getElementById("top_picture")
+
+          checkbox_video.onchange = function() {
+          if(this.checked) {
+              document.getElementById("top_video").style.zIndex = "2";
+              document.getElementById("top_picture").style.zIndex = "1";
+
+              document.getElementById("elapsed_time_span").style.visibility = "visible"
+              document.getElementById("remaining_time_span").style.visibility = "visible"
+
+              // document.getElementById("top_video").addEventListener("loadedmetadata", function() {
+              //   this.play();
+              // }, false);
+
+              top_vid.play();
+              // top_vid.pause();
+              // top_vid.currentTime = 7;
+              // top_vid.play();
+            } else {
+              document.getElementById("top_video").style.zIndex = "1";
+              document.getElementById("top_picture").style.zIndex = "2";
+
+              document.getElementById("elapsed_time_span").style.visibility = "hidden"
+              document.getElementById("remaining_time_span").style.visibility = "hidden"
+
+              document.getElementById("top_video").pause()  
+            }
+          }
+
+          document.getElementById("top_video").ontimeupdate = function() {
+            onTrackedVideoFrame(this.currentTime, this.duration);
+          }
+
+          function onTrackedVideoFrame(currentTime, duration){
+              // console.log(seconds_to_fancy(currentTime, true), seconds_to_fancy(duration - currentTime, false))
+              document.getElementById("elapsed_time_span").innerHTML = seconds_to_fancy(currentTime, true);
+              document.getElementById("remaining_time_span").innerHTML = seconds_to_fancy(duration - currentTime, false);
+          }
+
+          // var slider_video = document.getElementById('checkbox2');
+          // slider_video.onclick = function(){
+          //     // console.log("Video :", slider_video.checked)
+          //     if (slider_video.checked == true) {
+          //       document.getElementById("top_video").style.zIndex = "2";
+          //       document.getElementById("top_picture").style.zIndex = "1";
+          //       document.getElementById("top_video").currentTime = 208;
+          //       document.getElementById("top_video").play()
+          //     } else {
+          //       document.getElementById("top_video").style.zIndex = "1";
+          //       document.getElementById("top_picture").style.zIndex = "2";
+          //       console.log(document.getElementById("top_video").currentTime)
+          //       document.getElementById("top_video").pause()
+          //       console.log(document.getElementById("top_video").currentTime)
+          //     }
+          // }
+
+          function first_expansion(bool_checked) {
+
+              update(graph.nodes, graph.links, bool_checked)
+
+              if (bool_checked == true) {
+                flowchart_rect.transition().duration(1500).style("opacity",0).each('end', function(d) {d3.select(this).moveToBack()})
+                flowchart_text.transition().duration(1500).style("opacity",0).each('end', function(d) {d3.select(this).moveToBack()})
+              } else {
+                flowchart_text.transition().duration(1500).style("opacity",1).each('start', function(d) {d3.select(this).moveToFront()})
+                flowchart_rect.transition().duration(1500).style("opacity",0.3).each('start', function(d) {d3.select(this).moveToFront()})
+              }
+
+              // flowchart_rect.transition().duration(1500).style("opacity",0).each('end', function(d) {d3.select(this).moveToBack()})
+              // flowchart_text.transition().duration(1500).style("opacity",0).each('end', function(d) {d3.select(this).moveToBack()})
+
+              document.getElementById("checkbox1").checked = bool_checked;
+          }
+
         });
 
         function zeroPad(num, places) {
           var zero = places - num.toString().length + 1;
           return Array(+(zero > 0 && zero)).join("0") + num;
         }
+
+        function pad(num, size) {
+          return ('000000000' + num).substr(-size);
+        }
+
+        function seconds_to_fancy(timestamp, bool_elapsed) {
+          var seconds = Math.round(timestamp);
+          var floatingPointPart = Math.round(((seconds/60) % 1)*60);
+          var integerPart = Math.floor(seconds/60);
+          if (bool_elapsed==true) {
+            return pad(integerPart,2) + ':' + pad(floatingPointPart,2)
+          } else {
+            return '- ' + pad(integerPart,2) + ':' + pad(floatingPointPart,2)
+          }
+        }
+
+        function make_links_disappear() {
+          console.log(selected_nodes.size)
+        }
+
+        d3.selection.prototype.moveToFront = function() {  
+          return this.each(function(){
+            this.parentNode.appendChild(this);
+          });
+        };
+
+        d3.selection.prototype.moveToBack = function() {  
+            return this.each(function() { 
+                var firstChild = this.parentNode.firstChild; 
+                if (firstChild) { 
+                    this.parentNode.insertBefore(this, firstChild); 
+                } 
+            });
+        };
