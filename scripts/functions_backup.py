@@ -240,7 +240,7 @@ def write_to_json_source_target(dataframe, path_name, size_slide, fancy_timestam
 
         flare["links"].append({"source": source, "target": target, "value" : str(value), "value_text" : str(value_text), "color" : color})
 
-    with open('../Visualisation/d3/data/' + path_name + '.json', 'w') as outfile:
+    with open('../Visualisation/data/' + path_name + '.json', 'w') as outfile:
         json.dump(flare, outfile)
 
     return df_grpby_target, df_grpby_source

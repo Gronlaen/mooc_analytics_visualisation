@@ -14,7 +14,11 @@
     </style>
     <body>
         <div id="big_container">
+
+            <!-- Top div, containing the display of video/snapshot at the center, and both the left and right panel.-->
             <div id="top_global_container">
+
+                <!-- Left Panel (list of videos) -->
                 <div id="list_video_container">
                     <div id="course_title_div">
                         <span id="course_title_span">BIO-465</span>
@@ -39,11 +43,13 @@
                           <li><a onclick="this.className='active'" href="#about">Week 8 - part 5</a></li>
                         </ul>
                     </div>
+
+                <!-- Center Panel (video/snapshot + Progress Bar) -->
                 </div><div id="top_center_content_container">
                     <div id="top_div_container">
                       <div id="top_div">
-                        <img src="snapshots/bio_7_4/slide_00.png" id="top_picture">
-                        <video id="top_video" class="top_video" muted><source data-src="videos/bio_7_4.mp4" type="video/mp4"></video>
+                        <img src="snapshots/bio-465_week7_part4/slide_00.png" id="top_picture">
+                        <video id="top_video" class="top_video" muted><source data-src="videos/bio-465_week7_part4.mp4" type="video/mp4"></video>
                       </div>
                       <div id="progress_bar">
                         <div id="elapsed_time_div"><span id="elapsed_time_span">00:00</span>
@@ -54,6 +60,8 @@
                         </div>
                       </div>
                     </div>
+
+                <!-- Right Panel (with the two sliders) -->
                 </div><div id="options_container">
                     <div id="options">
                         <div id="zoom_div">
@@ -80,10 +88,9 @@
                 </div>
             </div>
 
-
+            <!-- Sankey Graph -->
             <div id="chart">
                 
-            
             <script type="text/javascript" src="scripts/flowchart.js"></script>
 
         </div>

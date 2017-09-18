@@ -1,7 +1,6 @@
 var margin = {top: 110, right: 65, bottom: 50, left: 65},
             width = 1500 - margin.left - margin.right,
             height = 600 - margin.top - margin.bottom;
-            // height = 250;
             
         var formatNumber = d3.format(",.0f"),
             format = function(d) { return formatNumber(d) + " Seeks"; },
@@ -27,14 +26,17 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
         var path = sankey.link();
 
+        // Currently selected nodes
         let selected_nodes = new Set();
 
+        // Last selected node (to determine which slide is displayed on top)
         var last_selected_node = 0;
 
+        // Path of the folder containing the snapshots, and name of the video
         var video_path = "bio-465_week7_part4";
-        // var video_path = "spc_4_2";
 
-        d3.json("../data/json/" + video_path + ".json", function(error, graph) {
+        // Creation of the Sankey graph
+        d3.json("data/json/" + video_path + ".json", function(error, graph) {
 
           var nodeMap = {};
           graph.nodes.forEach(function(x) { nodeMap[x.name] = x;  x.name = x.name.split(" ")[1];});
@@ -48,24 +50,23 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             };
           });
 
+          // Measurements of the nodes, and different elements of the graphical display
           var nodeSize = (width - (graph.nodes.length/2-1)*padding) / graph.nodes.length*2
           var nodeNumber = graph.nodes.length/2
           var nodeHeight = nodeSize*9/16
           var target_y_zoomed = height - nodeHeight
           var padding_flowchart = 60
 
-          console.log('node size',nodeSize)
-          console.log('node height',nodeHeight)
-          console.log('target.y', target_y_zoomed)
-          sankey.nodeWidth(nodeHeight)
-          sankey.target_y(target_y_zoomed)
-
+          // Application of the new dimensions to the graph
           sankey
+              .nodeWidth(nodeHeight)
+              .target_y(target_y_zoomed)
               .nodes(graph.nodes)
               .links(graph.links)
               .layout(0)
               .nodeSize(nodeSize);
 
+          // Links between source and target nodes
           var link = svg.append("g").selectAll(".link")
               .data(graph.links)
             .enter().append("path")
@@ -80,6 +81,8 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .style('visibility','hidden')
               .sort(function(a, b) { return b.dy - a.dy; });
 
+          // The two following variables are made only for the construction of the final 
+          // graph. They are not displayed.
           var linktext_top_dummy = svg.append("g").selectAll(".link")
               .data(graph.links)
             .enter()
@@ -99,7 +102,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .text(function(d) {return d.text; })
               .style('fill','black');
 
-
+          // Used only for construction
           var linktext_bottom_dummy = svg.append("g").selectAll(".link")
               .data(graph.links)
             .enter()
@@ -117,7 +120,8 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .style('visibility','hidden')
               .text(function(d) { return d.text; })
               .style('fill','red');
-            
+          
+          // Creation of the nodes
           var node = svg.append("g").selectAll(".node")
               .data(graph.nodes)
             .enter().append("g")
@@ -132,6 +136,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .call(d3.behavior.drag()
               .origin(function(d) { return d; }) );
 
+          // Creation of the rectangles around the nodes
           node.append("rect")
               .attr("height", sankey.nodeWidth())
               .attr("width", nodeSize)
@@ -140,7 +145,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .style("stroke", function(d) { return d3.rgb(d.color).darker(2); })
               .style("stroke-width",1)
             
-          // Slide number
+          // Creation of the label containg the slide number, in the middle of the node
           node.append("text")
               .attr('class','nodetitle')
               .attr("x", nodeSize / 2)
@@ -152,7 +157,8 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .text(function(d) {return d.name; })
 
 
-          // extra information about the incoming/outgoing seeks
+          // Creation of the labels containing extra information about the nodes,
+          // places above the source nodes and below the target ones.
           var node_infos = svg.append("g").selectAll(".node")
               .data(graph.nodes)
               .enter()
@@ -185,16 +191,12 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                   type = 'targetLinks'
                   sum = d.incoming_links
                 }
-                // var sum = 0;
-                // d[type].forEach(function(link) {
-                //   sum += parseInt(link.text);
-                // })
                 return sum + ' users navigated\n ' + connection_word + ' this slide.'; 
               })
               .style("font-weight", "bold")
 
-
-
+          // Creation of the bar containing the snapshots of all the slides, above the
+          // graph. These are the black backgrounds behind the actual snaphots.
           var snapshots_background = svg.append("g").selectAll(".node")
               .data(graph.nodes)
               .enter()
@@ -203,7 +205,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .attr("y", function(d) { return d.y - nodeHeight - 10- 30 })
               .attr("height", sankey.nodeWidth() + 10)
               .attr("width", nodeSize)
-              .style("fill", function(d){ //return "#0057e7";
+              .style("fill", function(d){ 
                 return "black"})
               .style("fill-opacity", function(d) { return 1;})
               .style("stroke", "black")
@@ -219,7 +221,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                 return "snapshots_background-"+i;
               })
 
-
+          // Creation of the actual snapshots above the Sankey graph.
           var snapshots_images = svg.append("g").selectAll(".node")
               .data(graph.nodes)
               .enter()
@@ -228,8 +230,6 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                 return "snapshots/" + video_path + "/slide_" + d.name + ".png";
               })
               .attr("x", function(d) { return d.x; })
-              // .attr("y", function(d) {return -nodeHeight - 5 + 2.5 - 30; })
-              // .attr("height", nodeHeight - 5)
               .attr("y", function(d) {return -nodeHeight - 5 - 30; })
               .attr("height", nodeHeight)
               .attr("width", nodeSize )
@@ -246,13 +246,14 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                 return "snapshots_images-"+i;
               })
 
+          // Creation of the white background behind the graph
           svg.append("rect")
             .attr("class", "bg_rect")
             .attr("width", width)
             .attr("height", 2*nodeHeight + padding_flowchart)
             .attr("fill", "white")
-            //.attr("transform", "translate(" + margin.left + "," + margin.right + ")");
             
+          // Creation of the rectangle serving as button to expand the graph
           var flowchart_rect = svg.append("rect")
               .attr("class", "switch_rect")
               .attr("x", width/2 - 100)
@@ -265,7 +266,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .style("opacity", 0.3)
               .on("click", function() { first_expansion(true); })
 
-
+          // Creation of the label of the button for the graph expansion
           var flowchart_text = svg.append("text")
               .attr("class", "switch_text")
               .attr("x",  width/2)
@@ -276,8 +277,10 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .attr("fill","black")
               .text("Expand Flowchart")
 
+
+          // Relocation of all the elements, to make all the nodes equally spaced.
           function moveToRightPlace() {
-            d3.selectAll('g.node')  //here's how you get all the nodes
+            d3.selectAll('g.node')
               .each(function(d) {
                 d.rightPlace = parseInt(d.name)*nodeSize + parseInt(d.name)*padding
                 d3.select(this).attr("transform", function(d) { 
@@ -287,30 +290,11 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                     return "translate(" + (d.x = d.rightPlace) + "," + (d.y = nodeHeight + padding_flowchart) + ")";
                   }
                 })
-                d3.select(this).attr("opacity", function(d) {
-                  if (d.class_type == 'source') {
-                    return 1;
-                  } else {
-                    return 1;
-                  }
-                })
+                d3.select(this).attr("opacity", 1)
                 if (d.class_type == 'target') d3.select(this).moveToBack()
             });
-            
-            // node.transition()
-            // .duration(0)
-            // .attr("transform", function(d) {
-            //   d.rightPlace = parseInt(d.name)*nodeSize + parseInt(d.name)*padding;
-            //   return "translate(" + (d.x = d.rightPlace) + "," + (d.y = 0) + ")";
-            // })
-            // .attr("opacity", function(d) {
-            //   if (d.class_type == 'source') {
-            //       return 1;
-            //     } else {
-            //       return 0;
-            //     }
-            // })
 
+            // once the nodes are in the correct spot, we move the other elements
             sankey.relayout();
             link.attr("d", path);
             linktext_bottom_dummy.attr("x", function(d) { return parseInt(d.target.name)*nodeSize + d.ty + d.dy/2 ; })
@@ -318,26 +302,20 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             snapshots_background.attr("x", function(d) { return parseInt(d.name)*nodeSize; })
             snapshots_images.attr("x", function(d) { return parseInt(d.name)*nodeSize; })
 
-
             d3.selectAll(".switch_text").each(function(d) {d3.select(this).moveToBack()})
-
             d3.selectAll(".bg_rect").each(function(d) {d3.select(this).moveToBack()})
 
-
+            // Initailization of the sliders and top element
             document.getElementById("top_video").style.zIndex = "1";
             document.getElementById("top_picture").style.zIndex = "2";
 
             document.getElementById("checkbox1").checked = false;
             document.getElementById("checkbox2").checked = false;
-
-            // document.getElementById("top_video").addEventListener("loadedmetadata", function() {
-            //   this.play();
-            // }, false);
-
           }
 
           moveToRightPlace()
 
+          // Update of the dummy top text elements (in order to create the real ones)
           linktext_top_dummy.each(function(d) {
             var bbox = this.getBBox();
             svg.append("rect")
@@ -349,12 +327,13 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .style("fill-opacity", "1")
               .style("stroke", "#000")
               .style("stroke-width", "1.5px")
-              .style("visibility", "hidden")
+              .style("visibility", "hidden") // we hide them
               .attr("id", function(){
                 return "link_top_frame-"+d.id;
               });
           })
 
+          // Creation of the real top text elements
           var linktext_top = svg.append("g").selectAll(".link")
               .data(graph.links)
             .enter()
@@ -374,6 +353,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .text(function(d) {return d.text; })
               .style('fill','black');
 
+          // Update of the dummy bottom text elements (in order to create the real ones)
           linktext_bottom_dummy.each(function(d) {
             var bbox = this.getBBox();
             svg.append("rect")
@@ -385,12 +365,13 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .style("fill-opacity", "1")
               .style("stroke", "#000")
               .style("stroke-width", "1.5px")
-              .style("visibility", "hidden")
+              .style("visibility", "hidden") // we hide them
               .attr("id", function(){
                 return "link_bottom_frame-"+d.id;
               });
           })
 
+          // Creation of the real bottom text elements
           var linktext_bottom = svg.append("g").selectAll(".link")
               .data(graph.links)
             .enter()
@@ -408,42 +389,17 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               .style('visibility','hidden')
               .text(function(d) { return d.text; })
               .style('fill','black');
-                        
-          function dragmove(d) {
-            //d3.select(this).attr("transform", "translate(" + d.x + "," + (d.y = Math.max(0, Math.min(height - d.dy, d3.event.y))) + ")");
-            d3.select(this).attr("transform", "translate(" + (d.x = Math.max(0, Math.min(width - d.dy, d3.event.x))) + "," + d.y + ")");
-            sankey.relayout();
-            link.attr("d", path);
 
-         
-          }
-
-          function update_text_info(n) {
-            // document.getElementById("table_timestamp_start").innerHTML = n.timestamp_start;
-            // document.getElementById("table_timestamp_end").innerHTML = n.timestamp_end;
-            // document.getElementById("table_users_in").innerHTML = n.incoming_links; 
-            // document.getElementById("table_users_out").innerHTML = n.outgoing_links;
-            // document.getElementById("table_slide_number").innerHTML = n.id % nodeNumber;
-
-            document.getElementById("highlight_progress_bar").style.background = n.color;
-            // document.getElementById("highlight_progress_bar").style.opacity = n.alpha;
-            document.getElementById("highlight_progress_bar").style.border = "solid 2px rgba(0,0,0,1)"
-
-
-
-
-            // document.getElementById("highlight_progress_bar").innerHTML = "ASDFGHJK"
-
-          }
-
+          // Update of all the elements of the top panel. The three elements of the progress
+          // bar are scaled according to the currently selected node, as well as the picture
+          // displayed.
           function update_top_elements(n) {
 
-            update_text_info(n);
+            // Settings for the highlighted part of the progress bar.
+            document.getElementById("highlight_progress_bar").style.background = n.color;
+            document.getElementById("highlight_progress_bar").style.border = "solid 2px rgba(0,0,0,1)"
 
             document.getElementById("top_picture").src = "snapshots/"+ video_path + "/slide_" + zeroPad(n.id % nodeNumber,2) + ".png";
-            // document.getElementById("top_div_container").style.visibility = "visible"
-            // document.getElementById("progress_bar_container").style.visibility = "visible"
-            // document.getElementById("slide_information_container").style.visibility = "visible"
 
             document.getElementById("before_progress_bar").style.width = n.progress_before + "px"
             document.getElementById("highlight_progress_bar").style.width = n.progress_highlight + "px"
@@ -479,21 +435,11 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
           }
 
-
+          // Animation of the expansion / contraction of the Sankey graph.
           function update(nodeData, linkData, zoomed) {
 
-            // console.log(document.getElementById("top_video").duration)
-            // console.log(document.getElementById("top_video").currentTime)
-            // sankey
-            //   .nodes(nodeData)
-            //   .links(linkData)
-            //   .layout(0);
-
-            //sankey.relayout();
-            // fontScale.domain(d3.extent(nodeData, function(d) { return d.value }));
-
+            // Contraction
             if (zoomed == true) {
-
               node_infos.transition()
                 .duration(1500)
                 .attr("transform", function(d) {
@@ -513,13 +459,6 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                     return "translate(" + d.x + "," + target_y_zoomed + ")";
                   }
                 })
-                // .style("opacity", function(d) {
-                //   if (d.class_type == 'source') {
-                //     return 1;
-                //   } else {
-                //     return 1;
-                //   }
-                // })
                 .each('end', function() { 
                   sankey.zoomed(true)
                 })
@@ -530,8 +469,6 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                 .each("end", function() {
                   d3.selectAll(".node").each(function(current_node) {
                   if (selected_nodes.has(current_node.id)) {
-
-                    console.log(current_node.id)
                     var remainingNodes=[],
                       nextNodes=[];
 
@@ -559,7 +496,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                 })
                 })
 
-
+            // Expansion
             } else {
 
               d3.selectAll(".link").each(function(d) {
@@ -579,12 +516,6 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                     return "translate(" + 0 + "," +  0 + ")";
                   }
                 })
-                  // .attr("x", function(d) { return parseInt(d.name)*nodeSize + nodeSize/2 })
-                  //   .attr("y", function(d) {
-                  // if (d.class_type == 'source')
-                  //   return -15 + d.y;
-                  // else
-                  //   return 22 + d.y + nodeHeight;
 
               node.transition()
                 .duration(1500)
@@ -595,60 +526,20 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                     return "translate(" + d.x + "," + (nodeHeight + padding_flowchart) + ")";
                   }
                 })
-                // .style("opacity", function(d) {
-                //   if (d.class_type == 'source') {
-                //     return 1;
-                //   } else {
-                //     return 1;
-                //   }
-                // })
                 .each('start', function() {
-                  make_links_disappear();
                   sankey.zoomed(false)
                 })
 
               d3.selectAll(".bg_rect").transition()
                 .duration(1500)
                 .attr("height", 2*nodeHeight + padding_flowchart)
-            }
-
-            
+            }       
 
             sankey.relayout();
-
-
-            // d3.selectAll('g.node')
-            // .each(function(d) {
-            //   d.rightPlace = parseInt(d.name)*nodeSize + parseInt(d.name)*padding
-            //   d3.select(this).attr("transform", "translate(" + (d.x = d.rightPlace) + "," + d.y + ")");
-            // });
-            // sankey.relayout();
-            // link.attr("d", path);
-
-            // sankey.relayout();
-
-
-
-            // svg.selectAll(".node rect")
-            //   .transition()
-            //   .duration(1300)
-            //   .attr("height", function(d) {
-            //     return d.dy;
-            //   });
-
-            // svg.selectAll(".node text")
-            //   .transition()
-            //   .duration(1300)
-            //   .attr("y", function(d) {
-            //     return d.dy / 2;
-            //   })
-            //   .style("font-size", function(d) {
-            //     return Math.floor(fontScale(d.value)) + "px";
-            //   });
           };
 
+          // When the user puts his mouse over a node
           function mouse_in_node(n,i) {
-
 
             var remainingNodes=[],
                 nextNodes=[];
@@ -661,16 +552,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
             d3.select(this).select("rect").style("stroke-width", node_stroke_width)
 
-            // d3.selectAll(".node").each(function(current_node) {
-            //     if ((current_node.id%nodeNumber != n.id%nodeNumber)  & !(selected_nodes.has(current_node.id)) & !(selected_nodes.has(current_node.id % nodeNumber)) & !(selected_nodes.has(node.id % nodeNumber + nodeNumber)) ) {
-            //       image_opacity = 0.2;
-            //     } else {
-            //       console.log(current_node.id, selected_nodes)
-            //       image_opacity = 1;
-            //     }
-            //     d3.select("#snapshots_images-" + current_node.id % nodeNumber).style("opacity", image_opacity)
-            //   })
-
+            // Update the opacity of the snapshots bar
             for (i = 0; i < nodeNumber; i++) {
               if ( (i != n.id % nodeNumber) & !(selected_nodes.has(i)) & !(selected_nodes.has(i + nodeNumber))) {
                 image_opacity = 0.2;
@@ -684,27 +566,18 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
             update_top_elements(n);
 
+            // Update of the video, if the slider is checked
             if (document.querySelector("input[name=checkbox2]").checked == true) {
               var top_vid = document.getElementById("top_video")
-              // if (!(top_video.paused == true)) {
 
-              // }
               top_vid.play();
               top_vid.pause();
               top_vid.currentTime = n.starting_time;
               top_vid.play();
             }
 
-
-            // d3.select("#big_images-" + n.id % nodeNumber).style("visibility", "visible")
-            // d3.select("#big_images_background-" + n.id % nodeNumber).style("visibility", "visible")
-
+            // If the graph is expanded
             if (sankey.zoomed()) {
-              
-              //d3.select(this).select("text").style("visibility", visibility)
-              //d3.select("#snapshots_background-" + n.id).style("stroke-width", node_stroke_width)
-
-              
 
               var traverse = [{
                                 linkType : "sourceLinks",
@@ -735,16 +608,13 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             }
           }
 
+          // When the user gets his mouse out of a node
           function mouse_out_node(node,i) {
-
-
-            console.log(selected_nodes, last_selected_node, selected_nodes[0])
 
             var partial_opacity = 0.2;
             var complete_visibility = 1;
-            // console.log("sel. nodes " + selected_nodes.size, node.id)
 
-            
+            // If there is no selected node
             if (selected_nodes.size == 0) {
               d3.selectAll(".node").each(function(current_node) {
                 d3.select("#snapshots_images-" + current_node.id).style("opacity", complete_visibility) 
@@ -764,13 +634,6 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               document.getElementById("after_progress_bar").style.borderBottom = "2px solid black"
 
               document.getElementById("top_picture").src = "snapshots/"+ video_path + "/slide_00.png";
-
-              // document.getElementById("top_picture").src = "snapshots/bio_7_4/slide_" + zeroPad(n.id % nodeNumber,2) + ".png";
-              // document.getElementById("top_div_container").style.visibility = "hidden"
-              // document.getElementById("progress_bar_container").style.visibility = "hidden"
-              // document.getElementById("slide_information_container").style.visibility = "hidden"
-              // d3.select("#big_images-" + node.id % nodeNumber).style("visibility", "hidden")
-              // d3.select("#big_images_background-" + node.id % nodeNumber).style("visibility", "hidden")
 
             } else {
               var current_displayed_node = 0
@@ -792,22 +655,19 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
                 current_displayed_node = 0;
               }
-              document.getElementById("top_picture").src = "snapshots/bio_7_4/slide_" + zeroPad(current_displayed_node % nodeNumber,2) + ".png";
+              document.getElementById("top_picture").src = "snapshots/bio-465_week7_part4/slide_" + zeroPad(current_displayed_node % nodeNumber,2) + ".png";
 
               for (i = 0; i < nodeNumber; i++) {
-              if ( !(selected_nodes.has(i)) & !(selected_nodes.has(i + nodeNumber))) {
-                image_opacity = 0.2;
-              } else {
-                image_opacity = 1;
+                if ( !(selected_nodes.has(i)) & !(selected_nodes.has(i + nodeNumber))) {
+                  image_opacity = 0.2;
+                } else {
+                  image_opacity = 1;
+                }
+                d3.select("#snapshots_images-" + i).style("opacity", image_opacity)
               }
-              d3.select("#snapshots_images-" + i).style("opacity", image_opacity)
-            }
-              // if ( !(selected_nodes.has(node.id)) & !(selected_nodes.has(node.id % nodeNumber)) & !(selected_nodes.has(node.id % nodeNumber + nodeNumber)) ){
-              // d3.select("#snapshots_images-" + node.id).style("opacity", partial_opacity)
             }
 
-            
-
+            // When the node is not selected, get all the elements back to normal
             if( d3.select(this).attr("data-clicked") != "1"  ) {
 
               var remainingNodes=[],
@@ -820,13 +680,10 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
               d3.select(this).select("rect").style("stroke-width", node_stroke_width)
 
-
               d3.select("#node_infos-" + node.id).style("visibility", visibility)
 
+              // Only if the graph is expanded
               if (sankey.zoomed()) {
-
-                
-                // for (let item of selected_nodes) console.log(item);
 
                 var traverse = [{
                                   linkType : "sourceLinks",
@@ -858,6 +715,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             }
           }
 
+          // When the user clicks on a node
           function highlight_node_links(node,i){
 
             var remainingNodes=[],
@@ -870,38 +728,29 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
 
             if( d3.select(this).attr("data-clicked") == "1" ){
 
-              
-              d3.select(this).attr("data-clicked","0");
-              // console.log(node.id + " clicked -> not clicked")
-              
+              // Update of the set of selected nodes, as well as the state of the node itself
+              d3.select(this).attr("data-clicked","0");              
               selected_nodes.delete(node.id)
 
+              // Set the parameters for the links
               stroke_color = "#C0C0C0"
               stroke_opacity = 0.3;
               rect_color = node.color
               visibility = 'hidden'
 
+            } else {
 
-              // d3.select("#big_images-" + node.id % nodeNumber).style("visibility", visibility)
-              // d3.select("#big_images_background-" + node.id % nodeNumber).style("visibility", visibility)
-
-            }else{
               d3.select(this).attr("data-clicked","1");
-              // console.log(node.id + " not clicked -> clicked")
-
               selected_nodes.add(node.id)
               last_selected_node = node.id
               
               stroke_color = node.color
               stroke_opacity = node.alpha
-              // rect_color = "#87CEEB"
               rect_color = "#000"
               visibility = 'visible'
-
-              // d3.select("#big_images-" + node.id % nodeNumber).style("visibility", visibility)
-              // d3.select("#big_images_background-" + node.id % nodeNumber).style("visibility", visibility)
             }
 
+            // Only if the graph is expanded
             if (sankey.zoomed()) {
 
               var traverse = [{
@@ -934,6 +783,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             }
           }
 
+          // Set the correct thickness and visibility for the node
           function highlight_link(id,opacity,color, visibility, node_class){
               d3.select("#link-"+id).style("stroke-opacity", opacity);
               d3.select("#link-"+id).style("stroke", color);
@@ -949,44 +799,14 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               
           }
 
+          // VIDEO PART
+
+          // slider for switching between picture and video display
           var slider_zoom = document.getElementById('checkbox1');
+
           slider_zoom.onclick = function(){
-              // console.log("Zoomed :", slider_zoom.checked)
-              // update(graph.nodes, graph.links, slider_zoom.checked)
               first_expansion(slider_zoom.checked)
-
           }
-
-          // var butt = document.getElementsByClassName('part_links')
-          // butt.onclick = function(this) {
-          //   this.classList.add('active')
-
-          //   // document.getElementById('top_div_container').style.visibility = "hidden"
-          //   // document.getElementById('chart').style.visibility = "hidden"
-          //   // document.getElementsByClassName('graph-svg-component').style.visibility = "hidden"
-          // }
-
-          // document.addEventListener('DOMContentLoaded', function () {
-          //   document.querySelector('#checkbox2').addEventListener('change', changeVideo);
-          // });
-
-          // function changeVideo() {
-          //   var slider_video = document.getElementById('checkbox2');
-          //   console.log(slider_video.checked)
-          //   if (slider_video.checked == true) {
-          //     document.getElementById("top_video").style.zIndex = "2";
-          //     document.getElementById("top_picture").style.zIndex = "1";
-
-          //     document.getElementById("top_video").currentTime = 208;
-          //     document.getElementById("top_video").play()
-          //   } else {
-          //     document.getElementById("top_video").style.zIndex = "1";
-          //     document.getElementById("top_picture").style.zIndex = "2";
-          //     console.log(document.getElementById("top_video").currentTime)
-          //     document.getElementById("top_video").pause()
-          //     console.log(document.getElementById("top_video").currentTime)
-          //   }
-          // }
 
           var checkbox_video = document.querySelector("input[name=checkbox2]");
           var top_vid = document.getElementById("top_video")
@@ -1005,9 +825,6 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
               // }, false);
 
               top_vid.play();
-              // top_vid.pause();
-              // top_vid.currentTime = 7;
-              // top_vid.play();
             } else {
               document.getElementById("top_video").style.zIndex = "1";
               document.getElementById("top_picture").style.zIndex = "2";
@@ -1023,33 +840,18 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
             onTrackedVideoFrame(this.currentTime, this.duration);
           }
 
+          // Update of the two time elements around the progress bar
           function onTrackedVideoFrame(currentTime, duration){
-              // console.log(seconds_to_fancy(currentTime, true), seconds_to_fancy(duration - currentTime, false))
               document.getElementById("elapsed_time_span").innerHTML = seconds_to_fancy(currentTime, true);
               document.getElementById("remaining_time_span").innerHTML = seconds_to_fancy(duration - currentTime, false);
           }
 
-          // var slider_video = document.getElementById('checkbox2');
-          // slider_video.onclick = function(){
-          //     // console.log("Video :", slider_video.checked)
-          //     if (slider_video.checked == true) {
-          //       document.getElementById("top_video").style.zIndex = "2";
-          //       document.getElementById("top_picture").style.zIndex = "1";
-          //       document.getElementById("top_video").currentTime = 208;
-          //       document.getElementById("top_video").play()
-          //     } else {
-          //       document.getElementById("top_video").style.zIndex = "1";
-          //       document.getElementById("top_picture").style.zIndex = "2";
-          //       console.log(document.getElementById("top_video").currentTime)
-          //       document.getElementById("top_video").pause()
-          //       console.log(document.getElementById("top_video").currentTime)
-          //     }
-          // }
-
+          // Expansion
           function first_expansion(bool_checked) {
 
               update(graph.nodes, graph.links, bool_checked)
 
+              // Animation of the button inside the graph.
               if (bool_checked == true) {
                 flowchart_rect.transition().duration(1500).style("opacity",0).each('end', function(d) {d3.select(this).moveToBack()})
                 flowchart_text.transition().duration(1500).style("opacity",0).each('end', function(d) {d3.select(this).moveToBack()})
@@ -1057,24 +859,25 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
                 flowchart_text.transition().duration(1500).style("opacity",1).each('start', function(d) {d3.select(this).moveToFront()})
                 flowchart_rect.transition().duration(1500).style("opacity",0.3).each('start', function(d) {d3.select(this).moveToFront()})
               }
-
-              // flowchart_rect.transition().duration(1500).style("opacity",0).each('end', function(d) {d3.select(this).moveToBack()})
-              // flowchart_text.transition().duration(1500).style("opacity",0).each('end', function(d) {d3.select(this).moveToBack()})
-
               document.getElementById("checkbox1").checked = bool_checked;
           }
 
         });
 
+        // UTILITIES
+
+        // Padding to match correct name of file
         function zeroPad(num, places) {
           var zero = places - num.toString().length + 1;
           return Array(+(zero > 0 && zero)).join("0") + num;
         }
 
+        // Add zeros to a int (to match a standard)
         function pad(num, size) {
           return ('000000000' + num).substr(-size);
         }
 
+        // Transforms the amount of seconds into a correct min:sec expression
         function seconds_to_fancy(timestamp, bool_elapsed) {
           var seconds = Math.round(timestamp);
           var floatingPointPart = Math.round(((seconds/60) % 1)*60);
@@ -1086,9 +889,7 @@ var margin = {top: 110, right: 65, bottom: 50, left: 65},
           }
         }
 
-        function make_links_disappear() {
-          console.log(selected_nodes.size)
-        }
+        // Functions used for z-index management
 
         d3.selection.prototype.moveToFront = function() {  
           return this.each(function(){
