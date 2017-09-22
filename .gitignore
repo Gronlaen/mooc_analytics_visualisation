@@ -94,3 +94,6 @@ ENV/
 # DataSets
 *.csv
 *.json
+
+# Images
+*.pdf
