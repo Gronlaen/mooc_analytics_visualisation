@@ -90,3 +90,7 @@ ENV/
 
 # Videos
 *.mp4
+
+# DataSets
+*.csv
+*.json

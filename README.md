@@ -5,26 +5,26 @@ This project took place under the supervision of Prof. Patrick Jermann and Dr. F
 The goal was to leverage MOOC Data in order to create a tool for teacher, giving them a feedback about the behaviour of the students while watching their classes. It is split in two different parts, the first one focused on the analysis of the logs, and the second one on the visualisation (the tool for teachers).
 
 ## Analysis
-Note : All the analysis will be done on a specific video : BIO-465 : Biological modeling of neural networks, Week 7, part 4.
+Note : All the analysis will be done on a specific video.
 
 ### First Selection
 
 The analysis is separated in multiple parts. The first one is the selection of the relevant Data. The logs we used are the complete ones, meaning that all the events were recorded. The following table lists those events. We first selection we made was based both on intuition and basic analysis.
 
 
-| EventType | Analyzed | Final Version | Comments | Nbr |
+| EventType | Analyzed | Final Version | Comments | Ratio (%) |
 |-------------------|----------|---------------|-----------------------------------------------------------------------------|-----|
-| Video.Pause | Yes | No | When a user pauses the video at a certain time | 370 |
-| Video.Play | Yes | No | When a user plays the video, either at the beginning or after a pause. | 562 |
-| Video.SpeedChange | No | No | When a user changes the speed of the video. | 2 |
-| Video.Seek | Yes | Yes | When a user jump to a specific time of the video, from any other time. | 347 |
-| Video.Load | No | No | When the video is loaded. | 513 |
-| Video.Transcript | No | No | When the user changes the subtitles display (on/off or different language). | 859 |
-| Video.Stop | No | No | When the user closes the video. | 61 |
+| Video.Pause | Yes | No | When a user pauses the video at a certain time | 13 |
+| Video.Play | Yes | No | When a user plays the video, either at the beginning or after a pause. | 21 |
+| Video.SpeedChange | No | No | When a user changes the speed of the video. | 0 |
+| Video.Seek | Yes | Yes | When a user jump to a specific time of the video, from any other time. | 13 |
+| Video.Load | No | No | When the video is loaded. | 19 |
+| Video.Transcript | No | No | When the user changes the subtitles display (on/off or different language). | 32 |
+| Video.Stop | No | No | When the user closes the video. | 2 |
 
  
-* The SpeedChanges did not have enough Data
-* The Load could not give us any information, as it always appears before any other event (same reasoning for the Stop)
+* The SpeedChanges did not have enough Data.
+* The Load could not give us any information, as it always appears before any other event (same reasoning for the Stop).
 * The Transcript was only set once by the other, therefore not interesting either.
 
 Thus we went with the Seeks, and the Pauses & Plays which we grouped into a single event.
@@ -92,14 +92,16 @@ To run the analysis of the Data, use the Notebook `scripts/Video_analysis.ipynb`
 Enter manually the details of the video, as well as the timestamps of slide changes.
 
 ```python
-course_code = "bio-465"
-week_number = "7"
-part_number = "4"
+course_code = "xxx-000"
+week_number = "0"
+part_number = "0"
 
-slides_timestamp = '00:00:18,268 00:01:20,138 ...'
+slides_timestamp = '00:00:21,251 00:02:30,158 ...'
 ```
 
 Put the csv file in the correct place, then run the entire notebook. It will create a JSON file in `visualisation/data/json/<video_id>.json` and display some visualisations to give an insight about the Data of the video.
+
+### Graphical part
 
 If you use a Python server :
 
